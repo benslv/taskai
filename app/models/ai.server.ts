@@ -1,6 +1,6 @@
 import { Configuration, OpenAIApi } from "openai";
 
-import { env } from "./env.model";
+import { env } from "./env.server";
 import { z } from "zod";
 
 const configuration = new Configuration({

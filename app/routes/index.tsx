@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import useLocalStorage from "use-local-storage";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { estimateDuration } from "~/models/ai.model";
+import { estimateDuration } from "~/models/ai.server";
 
 type Task = {
 	id: string;
@@ -37,14 +37,14 @@ export async function action({ request }: ActionArgs) {
 
 	const task = result.data;
 
-	const randomDuration = await estimateDuration(task.name);
+	const duration = await estimateDuration(task.name);
 
 	return json({
 		ok: true as const,
 		task: {
 			id: uuidv4(),
 			title: task.name,
-			duration: randomDuration,
+			duration: duration,
 		},
 	});
 }
