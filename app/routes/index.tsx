@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import useLocalStorage from "use-local-storage";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import { estimateDuration } from "~/models/ai.model";
 
 type Task = {
 	id: string;
@@ -17,7 +18,7 @@ const taskSchema = z.object({
 	name: z
 		.string()
 		.min(1, { message: "You have to enter a task name." })
-		.max(5, { message: "Task name is too long (max 50 characters)." }),
+		.max(100, { message: "Task name is too long (max 50 characters)." }),
 });
 
 export async function action({ request }: ActionArgs) {
@@ -36,7 +37,7 @@ export async function action({ request }: ActionArgs) {
 
 	const task = result.data;
 
-	const randomDuration = Math.floor(Math.random() * 10) + 1;
+	const randomDuration = await estimateDuration(task.name);
 
 	return json({
 		ok: true as const,
@@ -56,6 +57,7 @@ export default function Index() {
 	const isSubmitting = todoFetcher.state === "submitting";
 
 	const deletedId = useRef("");
+	const inputRef = useRef<HTMLFormElement>(null);
 
 	const deleteTask = (id: string) => {
 		deletedId.current = id;
@@ -68,6 +70,7 @@ export default function Index() {
 		if (data.task.id === deletedId.current) return () => {};
 
 		setTasks([...tasks, data.task]);
+		inputRef.current?.reset();
 	});
 
 	return (
@@ -84,7 +87,7 @@ export default function Index() {
 								onClick={() => deleteTask(tasks[0].id)}
 								className="flex cursor-pointer justify-between rounded-md border border-zinc-600 bg-zinc-700 bg-gradient-to-r from-zinc-800 via-cyan-800 to-green-400 p-2 px-4 shadow">
 								<p>{tasks[0].title}</p>
-								<p>{tasks[0].duration}</p>
+								<p className="font-bold text-zinc-800">{tasks[0].duration}</p>
 							</div>
 
 							{tasks.length > 1 && (
@@ -112,11 +115,14 @@ export default function Index() {
 				)}
 
 				{isSubmitting && (
-					<div className="flex items-center gap-x-2 rounded-md border border-zinc-600 bg-zinc-900 bg-gradient-to-r p-2 px-4 shadow">
+					<div className="mt-2 flex items-center justify-between gap-x-2 rounded-md border border-zinc-600 bg-zinc-900 bg-gradient-to-r p-2 px-4 shadow">
+						<p className="text-zinc-400">
+							{todoFetcher.submission.formData.get("task") as string}
+						</p>
 						<div role="status">
 							<svg
 								aria-hidden="true"
-								className="-ml-2 h-5 w-5 animate-spin fill-white text-zinc-700 dark:text-zinc-700"
+								className="-mr-2 h-5 w-5 animate-spin fill-white text-zinc-700 dark:text-zinc-700"
 								viewBox="0 0 100 101"
 								fill="none"
 								xmlns="http://www.w3.org/2000/svg">
@@ -131,24 +137,25 @@ export default function Index() {
 							</svg>
 							<span className="sr-only">Loading...</span>
 						</div>
-						<p className="text-zinc-400">
-							{todoFetcher.submission.formData.get("task") as string}
-						</p>
 					</div>
 				)}
 
-				<todoFetcher.Form className="mt-4 flex items-center" method="post">
+				<todoFetcher.Form
+					ref={inputRef}
+					className="mt-4 flex items-center"
+					method="post">
 					<input
 						type="text"
 						name="task"
 						min={1}
 						max={50}
+						autoComplete="off"
 						placeholder="e.g. Reply to John's email"
-						className="w-full min-w-0 rounded-tl-md rounded-bl-md  border border-zinc-600 bg-zinc-800 px-4 py-2 shadow-lg transition-colors focus-visible:bg-zinc-900 focus-visible:outline-none"
+						className="w-full min-w-0 rounded-bl-md rounded-tl-md  border border-zinc-600 bg-zinc-800 px-4 py-2 shadow-lg transition-colors focus-visible:bg-zinc-900 focus-visible:outline-none"
 					/>
 					<button
 						type="submit"
-						className="rounded-tr-md rounded-br-md border border-zinc-600 bg-zinc-600 p-2 shadow-lg transition-colors hover:border-zinc-500 hover:bg-zinc-500">
+						className="rounded-br-md rounded-tr-md border border-zinc-600 bg-zinc-600 p-2 shadow-lg transition-colors hover:border-zinc-500 hover:bg-zinc-500">
 						<Plus />
 					</button>
 				</todoFetcher.Form>
