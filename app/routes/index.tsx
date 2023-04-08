@@ -1,5 +1,6 @@
 import { Plus } from "iconoir-react";
 import { useState } from "react";
+import useLocalStorage from "use-local-storage";
 
 type Task = {
 	id: number;
@@ -7,14 +8,8 @@ type Task = {
 	duration: number;
 };
 
-const tasksData: Task[] = [
-	{ id: 1, title: "Meeting with Doe", duration: 15 },
-	{ id: 2, title: "Walk my dog", duration: 20 },
-	{ id: 3, title: "Reply to John's email", duration: 10 },
-];
-
 export default function Index() {
-	const [tasks, setTasks] = useState(tasksData);
+	const [tasks, setTasks] = useLocalStorage<Task[]>("tasks", []);
 	const [inputValue, setInputValue] = useState("");
 
 	const addTask = () => {
